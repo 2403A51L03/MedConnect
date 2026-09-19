@@ -1,0 +1,17 @@
+{
+  "name": "medconnect",
+  "private": true,
+  "version": "0.1.0",
+  "scripts": {
+    "dev": "npm run dev --prefix server",
+    "dev:client": "npm run dev --prefix client",
+    "dev:server": "npm run dev --prefix server",
+    "build": "npm run build --prefix client",
+    "start": "npm run start --prefix server",
+    "prisma:generate": "npm run prisma:generate --prefix server",
+    "prisma:validate": "npm run prisma:validate --prefix server",
+    "prisma:migrate": "npm run prisma:migrate --prefix server",
+    "prisma:seed": "npm run prisma:seed --prefix server",
+    "test": "npm test --prefix server"
+  }
+}
