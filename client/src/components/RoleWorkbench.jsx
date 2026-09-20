@@ -62,7 +62,6 @@ function PatientDashboard({ user }) {
   const [state, setState] = useState('loading')
   const [error, setError] = useState('')
   const [message, setMessage] = useState('')
-  const realtimeStatus = useRealtime(refresh, user.id)
 
   const refresh = useCallback(async () => {
     setState('loading')
@@ -85,6 +84,8 @@ function PatientDashboard({ user }) {
       setState('error')
     }
   }, [user.id])
+
+  const realtimeStatus = useRealtime(refresh, user.id)
 
   useEffect(() => { refresh() }, [refresh])
 
@@ -136,7 +137,6 @@ function DoctorDashboard({ user }) {
   const [state, setState] = useState('loading')
   const [error, setError] = useState('')
   const [message, setMessage] = useState('')
-  const realtimeStatus = useRealtime(refresh, user.id)
 
   const refresh = useCallback(async () => {
     setState('loading')
@@ -151,6 +151,8 @@ function DoctorDashboard({ user }) {
       setState('error')
     }
   }, [user.id])
+
+  const realtimeStatus = useRealtime(refresh, user.id)
 
   useEffect(() => { refresh() }, [refresh])
 
@@ -220,7 +222,6 @@ function StaffDashboard({ user }) {
   const [patientForm, setPatientForm] = useState({ name: '', email: '', password: '' })
   const [message, setMessage] = useState('')
   const [state, setState] = useState('loading')
-  const realtimeStatus = useRealtime(refresh, user.id)
 
   const refresh = useCallback(async () => {
     setState('loading')
@@ -235,6 +236,8 @@ function StaffDashboard({ user }) {
       setState('error')
     }
   }, [])
+
+  const realtimeStatus = useRealtime(refresh, user.id)
 
   useEffect(() => { refresh() }, [refresh])
 
