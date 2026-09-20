@@ -9,24 +9,31 @@ services:
     envVars:
       - key: NODE_ENV
         value: production
+
       - key: PORT
         value: 10000
+
       - key: DATABASE_URL
         sync: false
+
       - key: JWT_SECRET
         generateValue: true
+
       - key: JWT_EXPIRES_IN
         value: 1h
+
       - key: CLIENT_ORIGIN
         sync: false
 
-  - type: static
+  - type: web
     name: medconnect-client
+    runtime: static
     rootDir: client
     buildCommand: npm ci && npm run build
     staticPublishPath: ./dist
     envVars:
       - key: VITE_API_URL
         sync: false
+
       - key: VITE_SOCKET_URL
         sync: false
