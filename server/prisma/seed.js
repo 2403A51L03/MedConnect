@@ -38,23 +38,29 @@ const passwordHash = hashPassword('MedConnect123!')
 async function main() {
   const admin = await upsertUser({ name: 'Clinic Admin', email: 'admin@medconnect.local', role: 'ADMIN', passwordHash, phone: '+91 98765 10001' })
   const receptionist = await upsertUser({ name: 'Ananya Kulkarni', email: 'reception@medconnect.local', role: 'RECEPTIONIST', passwordHash, phone: '+91 98765 10002' })
-  const doctors = await Promise.all([
-    upsertDoctor({ name: 'Dr. Maya Rao', email: 'doctor@medconnect.local', phone: '+91 98765 11001', specialization: 'General Medicine' }),
-    upsertDoctor({ name: 'Dr. Arjun Mehta', email: 'arjun.mehta@medconnect.local', phone: '+91 98765 11002', specialization: 'Cardiology' }),
-    upsertDoctor({ name: 'Dr. Priya Nair', email: 'priya.nair@medconnect.local', phone: '+91 98765 11003', specialization: 'Paediatrics' }),
-    upsertDoctor({ name: 'Dr. Rohan Iyer', email: 'rohan.iyer@medconnect.local', phone: '+91 98765 11004', specialization: 'Dermatology' }),
-  ])
+  const doctors = []
+  for (const doctorInput of [
+    { name: 'Dr. Maya Rao', email: 'doctor@medconnect.local', phone: '+91 98765 11001', specialization: 'General Medicine' },
+    { name: 'Dr. Arjun Mehta', email: 'arjun.mehta@medconnect.local', phone: '+91 98765 11002', specialization: 'Cardiology' },
+    { name: 'Dr. Priya Nair', email: 'priya.nair@medconnect.local', phone: '+91 98765 11003', specialization: 'Paediatrics' },
+    { name: 'Dr. Rohan Iyer', email: 'rohan.iyer@medconnect.local', phone: '+91 98765 11004', specialization: 'Dermatology' },
+  ]) {
+    doctors.push(await upsertDoctor(doctorInput))
+  }
 
-  const patients = await Promise.all([
-    upsertPatient({ name: 'Aarav Mehta', email: 'patient@medconnect.local', phone: '+91 98765 12001' }),
-    upsertPatient({ name: 'Diya Shah', email: 'patient2@medconnect.local', phone: '+91 98765 12002' }),
-    upsertPatient({ name: 'Kabir Singh', email: 'patient3@medconnect.local', phone: '+91 98765 12003' }),
-    upsertPatient({ name: 'Ishita Banerjee', email: 'ishita.banerjee@medconnect.local', phone: '+91 98765 12004' }),
-    upsertPatient({ name: 'Vikram Joshi', email: 'vikram.joshi@medconnect.local', phone: '+91 98765 12005' }),
-    upsertPatient({ name: 'Meera Krishnan', email: 'meera.krishnan@medconnect.local', phone: '+91 98765 12006' }),
-    upsertPatient({ name: 'Aditya Patil', email: 'aditya.patil@medconnect.local', phone: '+91 98765 12007' }),
-    upsertPatient({ name: 'Sneha Reddy', email: 'sneha.reddy@medconnect.local', phone: '+91 98765 12008' }),
-  ])
+  const patients = []
+  for (const patientInput of [
+    { name: 'Aarav Mehta', email: 'patient@medconnect.local', phone: '+91 98765 12001' },
+    { name: 'Diya Shah', email: 'patient2@medconnect.local', phone: '+91 98765 12002' },
+    { name: 'Kabir Singh', email: 'patient3@medconnect.local', phone: '+91 98765 12003' },
+    { name: 'Ishita Banerjee', email: 'ishita.banerjee@medconnect.local', phone: '+91 98765 12004' },
+    { name: 'Vikram Joshi', email: 'vikram.joshi@medconnect.local', phone: '+91 98765 12005' },
+    { name: 'Meera Krishnan', email: 'meera.krishnan@medconnect.local', phone: '+91 98765 12006' },
+    { name: 'Aditya Patil', email: 'aditya.patil@medconnect.local', phone: '+91 98765 12007' },
+    { name: 'Sneha Reddy', email: 'sneha.reddy@medconnect.local', phone: '+91 98765 12008' },
+  ]) {
+    patients.push(await upsertPatient(patientInput))
+  }
 
   const now = new Date()
   const queueDate = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()))
