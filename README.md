@@ -1,3 +1,8 @@
+# Admin Account
+Email: admin@medconnect.local
+Password: MedConnect123!
+
+
 # MedConnect
 
 MedConnect is a clinic queue management and tele-consultation platform for patients, doctors, and receptionist/admin staff.
@@ -7,11 +12,7 @@ MedConnect is a clinic queue management and tele-consultation platform for patie
 - `client/`: React + Vite frontend with pages, layouts, hooks, and API services
 - `server/`: Express backend with routes, controllers, services, middleware, validation, Prisma database configuration, and Socket.IO/WebRTC signaling
 - `server/prisma/schema.prisma`: PostgreSQL data model for users, roles, doctors, patients, appointments, and queue tokens
-- `PROJECT_MAP.md`: viva-friendly map of the main application flow and files
-- `DEMO_GUIDE.md`: repeatable patient, doctor, and receptionist/admin demonstration
-- `AUDIT_REPORT.md`: baseline repository audit
-- `PROJECT_ROADMAP.md`: schedule through the final viva
-- `INTEGRATION_AUDIT.md`: frontend/backend endpoint and browser verification audit
+- `docs/`: API, database, testing, user, and deployment documentation
 
 ## Local setup
 
@@ -43,7 +44,7 @@ Run the frontend in another terminal:
 npm run dev:client
 ```
 
-The API health check is available at `http://localhost:4000/api/health`. The Vite client runs at `http://localhost:5173` and contains the Review-2 demo flow.
+The API health check is available at `http://localhost:4000/api/health`. The database readiness check is available at `http://localhost:4000/api/health/ready`. The Vite client runs at `http://localhost:5000` and contains the Review-2 demo flow.
 
 On Windows, create the PostgreSQL database first if it does not already exist:
 
@@ -61,7 +62,17 @@ npm run dev:server
 npm run dev:client
 ```
 
-Open `http://localhost:5173`.
+Open `http://localhost:5000`.
+
+For a local PostgreSQL database with Docker Desktop running:
+
+```powershell
+npm run db:up
+npm run prisma:migrate
+npm run prisma:seed
+```
+
+The database definition is in `docker-compose.yml`. Stop it with `npm run db:down`. Account creation and seeded demo data require the database to be running; `/api/health/ready` must return `status: "ready"` before using those flows.
 
 For the Replit preview, the configured workflow runs both services together on port 5000. Vite proxies `/api` and `/socket.io` to the Express server, so the browser uses same-origin URLs in development and preview.
 
@@ -176,14 +187,14 @@ Seeded password for every demo account: `MedConnect123!`
 
 Recommended sequence: log in as a patient, choose `Dr. Maya Rao`, book an appointment, and check its queue position. Then log in as the doctor in another browser/private window, review appointments and the queue, call the next patient, start the consultation, and complete it. Completing the consultation automatically calls the next waiting token. Receptionist/admin users can review all appointments, register a patient through `POST /api/patients`, create a walk-in through `POST /api/appointments/walk-in`, and manage a queue by providing the doctor's user ID.
 
-The seed creates three same-day queue entries with tokens 1, 2, and 3. The displayed clock time depends on the machine timezone. See [DEMO_GUIDE.md](DEMO_GUIDE.md) for the exact walkthrough and expected state transitions.
+The seed creates same-day queue entries for the seeded demo patients. See [docs/USER_GUIDE.md](docs/USER_GUIDE.md) for the exact admin, doctor, receptionist, and patient walkthroughs.
 
 ## Documentation and deployment status
 
-- [API_DOCUMENTATION.md](API_DOCUMENTATION.md): implemented API routes and authorization requirements
-- [DATABASE_DESIGN.md](DATABASE_DESIGN.md): current Prisma schema and migration notes
-- [DEPLOYMENT.md](DEPLOYMENT.md): provider-neutral production deployment procedure and verification checklist
-- [PROJECT_PROGRESS.md](PROJECT_PROGRESS.md): evidence-based implementation status
-- [FINAL_PROJECT_AUDIT.md](FINAL_PROJECT_AUDIT.md): final requirements audit
+- [docs/API_DOCUMENTATION.md](docs/API_DOCUMENTATION.md): implemented API routes and authorization requirements
+- [docs/DATABASE_DESIGN.md](docs/DATABASE_DESIGN.md): current Prisma schema and migration notes
+- [docs/TESTING.md](docs/TESTING.md): test strategy and verification commands
+- [docs/USER_GUIDE.md](docs/USER_GUIDE.md): admin and role-based application walkthroughs
+- [docs/DEPLOYMENT_GUIDE.md](docs/DEPLOYMENT_GUIDE.md): production deployment procedure
 
-The application has not been deployed to a cloud provider from this workspace because no hosting, database, DNS, or deployment credentials are configured. Production URLs therefore remain pending. No secrets are committed; use environment variables or the hosting provider's secret manager.
+See [docs/USER_GUIDE.md](docs/USER_GUIDE.md) for admin login details and workflows. See [docs/DEPLOYMENT_GUIDE.md](docs/DEPLOYMENT_GUIDE.md) for the production publishing process. No secrets are committed; use environment variables or the hosting provider's secret manager.

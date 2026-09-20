@@ -13,7 +13,11 @@
     "prisma:generate": "npm run prisma:generate --prefix server",
     "prisma:validate": "npm run prisma:validate --prefix server",
     "prisma:migrate": "npm run prisma:migrate --prefix server",
+    "prisma:migrate:deploy": "npm run prisma:migrate:deploy --prefix server",
     "prisma:seed": "npm run prisma:seed --prefix server",
+    "db:up": "docker compose up -d postgres",
+    "db:down": "docker compose down",
+    "db:logs": "docker compose logs -f postgres",
     "test": "npm test --prefix server"
   }
 }

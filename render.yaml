@@ -1,0 +1,32 @@
+services:
+  - type: web
+    name: medconnect-api
+    runtime: node
+    rootDir: server
+    buildCommand: npm ci && npm run prisma:generate && npm run prisma:migrate:deploy
+    startCommand: npm start
+    healthCheckPath: /api/health/ready
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      - key: DATABASE_URL
+        sync: false
+      - key: JWT_SECRET
+        generateValue: true
+      - key: JWT_EXPIRES_IN
+        value: 1h
+      - key: CLIENT_ORIGIN
+        sync: false
+
+  - type: static
+    name: medconnect-client
+    rootDir: client
+    buildCommand: npm ci && npm run build
+    staticPublishPath: ./dist
+    envVars:
+      - key: VITE_API_URL
+        sync: false
+      - key: VITE_SOCKET_URL
+        sync: false
