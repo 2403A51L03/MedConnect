@@ -49,7 +49,7 @@ In Render, select **New -> Blueprint**, connect the GitHub repository, and choos
 
 ### API environment values
 
-The Blueprint creates the API and its build/start/health settings. Enter the `sync: false` values in the Render dashboard:
+The Blueprint creates the API and its build/start/health settings. Its build command also runs the idempotent demo seed after migrations, which is useful on the free Render plan because service Shell access is unavailable. Enter the `sync: false` values in the Render dashboard:
 
 ```env
 NODE_ENV=production
@@ -69,13 +69,7 @@ VITE_SOCKET_URL=https://medconnect-api.onrender.com
 
 Set the API `CLIENT_ORIGIN` to the exact Render static-site URL, then redeploy both services.
 
-After the first deploy, run the seed once from a secure shell or Render job if demo data is required:
-
-```bash
-npm run prisma:seed
-```
-
-For a real clinic, replace the demo seed with controlled data entry and never seed fictional credentials into production.
+The build automatically creates or updates the demo accounts. For a real clinic, remove `&& npm run prisma:seed` from `render.yaml` and replace the demo seed with controlled data entry before accepting real users.
 
 ## 5. Verify the live system
 
