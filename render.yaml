@@ -2,6 +2,7 @@ services:
   - type: web
     name: medconnect-api
     runtime: node
+    plan: free
     rootDir: server
     buildCommand: npm ci && npm run prisma:generate && npm run prisma:migrate:deploy
     startCommand: npm start
@@ -28,6 +29,7 @@ services:
   - type: web
     name: medconnect-client
     runtime: static
+    plan: free
     rootDir: client
     buildCommand: npm ci && npm run build
     staticPublishPath: ./dist
