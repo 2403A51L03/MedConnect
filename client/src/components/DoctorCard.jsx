@@ -1,4 +1,4 @@
-export function DoctorCard({ doctor, selected, onSelect }) {
+export function DoctorCard({ doctor, selected, canManage = false, onSelect }) {
   const availabilityLabel = doctor.availability === 'BUSY' ? 'In consultation' : doctor.availability === 'UNAVAILABLE' ? 'Unavailable' : 'Available'
   const availabilityClass = doctor.availability === 'BUSY' ? 'busy' : doctor.availability === 'UNAVAILABLE' ? 'offline' : ''
   return (
@@ -13,8 +13,8 @@ export function DoctorCard({ doctor, selected, onSelect }) {
           <span className={`availability ${availabilityClass}`}><span /> {availabilityLabel}</span>
         </div>
         <p className="doctor-contact">{doctor.email}</p>
-        <button type="button" className="select-doctor" onClick={() => onSelect(doctor)} disabled={!doctor.isAvailable}>
-          {selected ? 'Selected for booking' : doctor.isAvailable ? 'View schedule' : 'Currently unavailable'}
+        <button type="button" className="select-doctor" onClick={() => onSelect(doctor)} disabled={!doctor.isAvailable && !canManage}>
+          {selected ? 'Selected' : canManage && !doctor.isAvailable ? 'Manage availability' : doctor.isAvailable ? 'View schedule' : 'Currently unavailable'}
         </button>
       </div>
     </article>

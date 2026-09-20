@@ -103,6 +103,7 @@ function PatientDashboard({ user }) {
     <section className="dashboard-section" aria-labelledby="patient-workspace-title">
       <DashboardHeader role="Patient" title="Your care timeline" subtitle={`Welcome back, ${user.name}. Follow one clear path from booking to consultation.`} onRefresh={refresh} loading={state === 'loading'} />
       <p className={`realtime-status ${realtimeStatus}`}>Live updates: {realtimeStatus === 'connected' ? 'connected' : 'reconnecting'}</p>
+      <p className="muted-copy">Workflow: call the next patient, start the consultation, join the call, then complete it to advance the queue.</p>
       {message && <p className="management-message" aria-live="polite">{message}</p>}
       <Kpis items={[['Active appointments', active, 'teal'], ['Current token', queue?.queueEntry?.tokenNumber || '—', 'coral'], ['Patients ahead', queue?.position ? Math.max(queue.position - 1, 0) : '—', ''], ['Notifications', data.notifications.filter((item) => !item.readAt).length, 'teal']]} />
       <div className="dashboard-grid patient-grid">
@@ -182,6 +183,7 @@ function DoctorDashboard({ user }) {
     <section className="dashboard-section" aria-labelledby="doctor-workspace-title">
       <DashboardHeader role="Doctor" title="Today at the clinic" subtitle={`A focused queue view for ${user.name}.`} onRefresh={refresh} loading={state === 'loading'} />
       <p className={`realtime-status ${realtimeStatus}`}>Live updates: {realtimeStatus === 'connected' ? 'connected' : 'reconnecting'}</p>
+      <p className="muted-copy">When your doctor calls you, select <strong>Join consultation</strong>. Allow camera and microphone access to engage by video.</p>
       {message && <p className="management-message" aria-live="polite">{message}</p>}
       <Kpis items={[["Today's appointments", appointments.length, 'teal'], ['Waiting patients', waiting.length, 'coral'], ['Queue length', queue.length, ''], ['Availability', current ? 'Busy' : 'Ready', current ? 'coral' : 'teal']]} />
       <div className="dashboard-grid doctor-grid">

@@ -12,7 +12,8 @@ export function DoctorsPage() {
   const [schedule, setSchedule] = useState([])
   const [status, setStatus] = useState('loading')
   const [refreshKey, setRefreshKey] = useState(0)
-  const viewerRole = getStoredUser()?.role
+  const viewer = getStoredUser()
+  const viewerRole = viewer?.role
 
   useEffect(() => {
     let active = true
@@ -56,7 +57,7 @@ export function DoctorsPage() {
       {status === 'error' && <p className="inline-error">The doctor directory is unavailable right now.</p>}
       {status === 'ready' && doctors.length === 0 && <p className="empty-state">No available doctors match those filters.</p>}
       <div className="doctor-grid">
-        {doctors.map((doctor) => <DoctorCard key={doctor.id} doctor={doctor} selected={selectedDoctor?.id === doctor.id} onSelect={selectDoctor} />)}
+        {doctors.map((doctor) => <DoctorCard key={doctor.id} doctor={doctor} selected={selectedDoctor?.id === doctor.id} canManage={viewerRole === 'DOCTOR' && doctor.userId === viewer?.id} onSelect={selectDoctor} />)}
       </div>
       {selectedDoctor && (
         <aside className="schedule-panel" aria-live="polite">
@@ -70,7 +71,13 @@ export function DoctorsPage() {
           ))}
         </aside>
       )}
-      <DoctorManagementPanel selectedDoctor={selectedDoctor} onSaved={() => setRefreshKey((value) => value + 1)} />
+      <DoctorManagementPanel
+        selectedDoctor={selectedDoctor}
+        onSaved={(updatedDoctor) => {
+          if (updatedDoctor) setSelectedDoctor((current) => current?.id === updatedDoctor.id ? { ...current, ...updatedDoctor } : current)
+          setRefreshKey((value) => value + 1)
+        }}
+      />
     </section>
   )
 }

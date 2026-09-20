@@ -28,9 +28,9 @@ export function DoctorManagementPanel({ selectedDoctor, onSaved }) {
   async function toggleAvailability() {
     if (!selectedDoctor || user.role !== 'DOCTOR' || selectedDoctor.userId !== user.id) return
     try {
-      await updateDoctor(selectedDoctor.id, { availability: selectedDoctor.availability === 'AVAILABLE' ? 'UNAVAILABLE' : 'AVAILABLE' })
+      const updatedDoctor = await updateDoctor(selectedDoctor.id, { availability: selectedDoctor.availability === 'AVAILABLE' ? 'UNAVAILABLE' : 'AVAILABLE' })
       setMessage('Availability updated.')
-      onSaved()
+      onSaved(updatedDoctor)
     } catch (error) {
       setMessage(error.message)
     }
@@ -52,9 +52,12 @@ export function DoctorManagementPanel({ selectedDoctor, onSaved }) {
         </form>
       )}
       {user.role === 'DOCTOR' && selectedDoctor?.userId === user.id && (
-        <button type="button" className="select-doctor" onClick={toggleAvailability}>
-          Set {selectedDoctor.availability === 'AVAILABLE' ? 'unavailable' : 'available'}
-        </button>
+        <div>
+          <p className="muted-copy">Your status controls whether patients can book you.</p>
+          <button type="button" className="select-doctor" onClick={toggleAvailability}>
+            Set {selectedDoctor.availability === 'AVAILABLE' ? 'unavailable' : 'available'}
+          </button>
+        </div>
       )}
       {message && <p className="management-message" aria-live="polite">{message}</p>}
     </section>
