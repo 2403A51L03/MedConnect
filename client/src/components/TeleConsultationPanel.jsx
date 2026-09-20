@@ -2,7 +2,15 @@ import { useEffect, useRef, useState } from 'react'
 import { io } from 'socket.io-client'
 import { getAccessToken } from '../services/session.js'
 
-const socketUrl = import.meta.env.VITE_SOCKET_URL || window.location.origin
+function getSocketUrl() {
+  if (import.meta.env.VITE_SOCKET_URL) return import.meta.env.VITE_SOCKET_URL
+  if (import.meta.env.VITE_API_URL && /^https?:\/\//.test(import.meta.env.VITE_API_URL)) {
+    return import.meta.env.VITE_API_URL.replace(/\/api\/?$/, '')
+  }
+  return window.location.origin
+}
+
+const socketUrl = getSocketUrl()
 
 function normalizeErrorMessage(error) {
   if (!error) return 'Unable to start the consultation.'
@@ -46,18 +54,24 @@ export function TeleConsultationPanel({ user, queueEntryId, roleLabel = 'Patient
   async function ensurePeerConnection() {
     if (peerConnectionRef.current) return peerConnectionRef.current
 
-    const peerConnection = new RTCPeerConnection({
-      iceServers: [
-        { urls: 'stun:stun.l.google.com:19302' },
-        ...(import.meta.env.VITE_TURN_URL ? [{ urls: import.meta.env.VITE_TURN_URL, username: import.meta.env.VITE_TURN_USERNAME, credential: import.meta.env.VITE_TURN_CREDENTIAL }] : []),
-      ],
-    })
+    const iceServers = [
+      { urls: 'stun:stun.l.google.com:19302' },
+      { urls: 'stun:stun1.l.google.com:19302' },
+      ...(import.meta.env.VITE_TURN_URL ? [{ urls: import.meta.env.VITE_TURN_URL, username: import.meta.env.VITE_TURN_USERNAME, credential: import.meta.env.VITE_TURN_CREDENTIAL }] : []),
+    ]
+    const peerConnection = new RTCPeerConnection({ iceServers })
 
     peerConnection.ontrack = (event) => {
-      const [remoteStream] = event.streams
-      if (remoteStream && remoteVideoRef.current) {
-        remoteVideoRef.current.srcObject = remoteStream
+      if (!remoteVideoRef.current) return
+      if (event.streams[0]) {
+        remoteVideoRef.current.srcObject = event.streams[0]
+        remoteVideoRef.current.play().catch(() => {})
+        return
       }
+      const remoteStream = remoteVideoRef.current.srcObject || new MediaStream()
+      remoteStream.addTrack(event.track)
+      remoteVideoRef.current.srcObject = remoteStream
+      remoteVideoRef.current.play().catch(() => {})
     }
 
     peerConnection.onicecandidate = (event) => {
@@ -70,9 +84,12 @@ export function TeleConsultationPanel({ user, queueEntryId, roleLabel = 'Patient
     }
 
     peerConnection.onconnectionstatechange = () => {
-      if (peerConnection.connectionState === 'failed' || peerConnection.connectionState === 'disconnected') {
+      if (peerConnection.connectionState === 'connected') {
+        setStatus('connected')
+        setError('')
+      } else if (peerConnection.connectionState === 'failed' || peerConnection.connectionState === 'disconnected') {
         setStatus('connection-failed')
-        setError('The consultation connection failed. Please retry or rejoin.')
+        setError('Audio/video connection failed. Check camera and microphone permissions, then retry or rejoin.')
       }
     }
 
@@ -96,7 +113,10 @@ export function TeleConsultationPanel({ user, queueEntryId, roleLabel = 'Patient
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true })
       streamRef.current = stream
-      if (localVideoRef.current) localVideoRef.current.srcObject = stream
+      if (localVideoRef.current) {
+        localVideoRef.current.srcObject = stream
+        localVideoRef.current.play().catch(() => {})
+      }
 
       const socket = io(socketUrl, {
         auth: { token },

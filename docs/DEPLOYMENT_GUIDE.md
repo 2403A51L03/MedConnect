@@ -65,9 +65,14 @@ After the API deploys, copy its Render URL. Then set the client values in the Re
 ```env
 VITE_API_URL=https://medconnect-api.onrender.com/api
 VITE_SOCKET_URL=https://medconnect-api.onrender.com
+VITE_TURN_URL=turn:your-turn-provider.example.com:3478
+VITE_TURN_USERNAME=your-turn-username
+VITE_TURN_CREDENTIAL=your-turn-credential
 ```
 
 Set the API `CLIENT_ORIGIN` to the exact Render static-site URL, then redeploy both services.
+
+The first two ICE servers use public STUN and are enough for many networks. For reliable audio/video across mobile networks, corporate firewalls, and symmetric NAT, configure a paid or self-hosted TURN provider in these three variables. Keep the TURN credential in Render's environment settings and never commit it.
 
 The build automatically creates or updates the demo accounts. For a real clinic, remove `&& npm run prisma:seed` from `render.yaml` and replace the demo seed with controlled data entry before accepting real users.
 
