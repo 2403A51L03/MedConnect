@@ -11,6 +11,8 @@ setRealtimeServer(io)
 configureSocketAuthentication(io)
 registerSocketHandlers(io)
 
-httpServer.listen(env.port, () => {
+const host = env.nodeEnv === 'production' ? '0.0.0.0' : '127.0.0.1'
+
+httpServer.listen(env.port, host, () => {
   console.log(`MedConnect API listening on http://localhost:${env.port}`)
 })
