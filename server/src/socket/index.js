@@ -71,7 +71,8 @@ export function registerSocketHandlers(io) {
 
         socket.join(`consultation:${queueEntryId}`)
         socket.data.consultationIds.add(queueEntryId)
-        socket.emit('consultation:joined', { queueEntryId: queueEntry.id, appointmentId: queueEntry.appointmentId })
+        const participantPresent = (io.sockets.adapter.rooms.get(`consultation:${queueEntryId}`)?.size || 0) > 1
+        socket.emit('consultation:joined', { queueEntryId: queueEntry.id, appointmentId: queueEntry.appointmentId, participantPresent })
         socket.to(`consultation:${queueEntryId}`).emit('consultation:participant-joined', {
           userId: socket.auth.userId,
           role: socket.auth.role,

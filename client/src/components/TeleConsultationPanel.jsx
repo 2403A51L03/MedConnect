@@ -28,6 +28,8 @@ export function TeleConsultationPanel({ user, queueEntryId, roleLabel = 'Patient
   const socketRef = useRef(null)
   const peerConnectionRef = useRef(null)
   const streamRef = useRef(null)
+  const localTracksAddedRef = useRef(false)
+  const offerInProgressRef = useRef(false)
   const queueEntryIdRef = useRef(queueEntryId)
   const pendingCandidatesRef = useRef([])
   const [isMuted, setIsMuted] = useState(false)
@@ -49,6 +51,8 @@ export function TeleConsultationPanel({ user, queueEntryId, roleLabel = 'Patient
       peerConnectionRef.current.close()
     }
     pendingCandidatesRef.current = []
+    localTracksAddedRef.current = false
+    offerInProgressRef.current = false
   }, [])
 
   async function ensurePeerConnection() {
@@ -97,6 +101,12 @@ export function TeleConsultationPanel({ user, queueEntryId, roleLabel = 'Patient
     return peerConnection
   }
 
+  function addLocalTracks(peerConnection, stream) {
+    if (localTracksAddedRef.current) return
+    stream.getTracks().forEach((track) => peerConnection.addTrack(track, stream))
+    localTracksAddedRef.current = true
+  }
+
   async function startConsultation() {
     if (!queueEntryIdRef.current || !user) {
       setError('No active consultation is available.')
@@ -126,33 +136,38 @@ export function TeleConsultationPanel({ user, queueEntryId, roleLabel = 'Patient
 
       socketRef.current = socket
 
+      async function sendDoctorOffer() {
+        if (user.role !== 'DOCTOR' || offerInProgressRef.current) return
+        const peerConnection = await ensurePeerConnection()
+        addLocalTracks(peerConnection, stream)
+        if (peerConnection.signalingState !== 'stable') return
+        offerInProgressRef.current = true
+        try {
+          const offer = await peerConnection.createOffer()
+          await peerConnection.setLocalDescription(offer)
+          socket.emit('webrtc-offer', { queueEntryId: queueEntryIdRef.current, offer })
+        } finally {
+          offerInProgressRef.current = false
+        }
+      }
+
       socket.on('connect', () => {
         setStatus('joining')
         socket.emit('join-consultation', { queueEntryId: queueEntryIdRef.current })
       })
 
-      socket.on('consultation:joined', async () => {
-        setStatus('connected')
+      socket.on('consultation:joined', async ({ participantPresent }) => {
+        setStatus('joining')
         const peerConnection = await ensurePeerConnection()
-        stream.getTracks().forEach((track) => peerConnection.addTrack(track, stream))
-        if (user.role === 'DOCTOR') {
-          const offer = await peerConnection.createOffer()
-          await peerConnection.setLocalDescription(offer)
-          socket.emit('webrtc-offer', { queueEntryId: queueEntryIdRef.current, offer })
-        }
+        addLocalTracks(peerConnection, stream)
+        if (user.role === 'DOCTOR' && participantPresent) await sendDoctorOffer()
       })
 
-      socket.on('consultation:participant-joined', async () => {
-        if (user.role !== 'DOCTOR') return
-        const peerConnection = await ensurePeerConnection()
-        const offer = await peerConnection.createOffer()
-        await peerConnection.setLocalDescription(offer)
-        socket.emit('webrtc-offer', { queueEntryId: queueEntryIdRef.current, offer })
-      })
+      socket.on('consultation:participant-joined', sendDoctorOffer)
 
       socket.on('webrtc-offer', async ({ offer }) => {
         const peerConnection = await ensurePeerConnection()
-        stream.getTracks().forEach((track) => peerConnection.addTrack(track, stream))
+        addLocalTracks(peerConnection, stream)
         await peerConnection.setRemoteDescription(new RTCSessionDescription(offer))
         for (const pendingCandidate of pendingCandidatesRef.current.splice(0)) await peerConnection.addIceCandidate(pendingCandidate)
         const answer = await peerConnection.createAnswer()
@@ -162,6 +177,7 @@ export function TeleConsultationPanel({ user, queueEntryId, roleLabel = 'Patient
 
       socket.on('webrtc-answer', async ({ answer }) => {
         const peerConnection = await ensurePeerConnection()
+        if (peerConnection.signalingState !== 'have-local-offer') return
         await peerConnection.setRemoteDescription(new RTCSessionDescription(answer))
         for (const pendingCandidate of pendingCandidatesRef.current.splice(0)) await peerConnection.addIceCandidate(pendingCandidate)
       })
@@ -212,6 +228,8 @@ export function TeleConsultationPanel({ user, queueEntryId, roleLabel = 'Patient
       peerConnectionRef.current.close()
       peerConnectionRef.current = null
     }
+    localTracksAddedRef.current = false
+    offerInProgressRef.current = false
     if (localVideoRef.current) localVideoRef.current.srcObject = null
     if (remoteVideoRef.current) remoteVideoRef.current.srcObject = null
     setStatus('idle')
