@@ -1,6 +1,6 @@
 import { clearSession, getAccessToken } from './session.js'
 
-const apiBaseUrl = import.meta.env.VITE_API_URL || 'http://localhost:4000/api'
+const apiBaseUrl = import.meta.env.VITE_API_URL || '/api'
 
 function getFriendlyMessage(status, fallback) {
   if (status === 400) return 'Your request is missing required information or contains invalid values.'

@@ -6,6 +6,14 @@ function optionalString(value, field) {
   return value.trim()
 }
 
+function optionalBoolean(value, field) {
+  if (value === undefined) return undefined
+  if (typeof value === 'boolean') return value
+  if (value === 'true') return true
+  if (value === 'false') return false
+  throw httpError(400, `${field} must be true or false`)
+}
+
 export function validateDoctorCreation(body = {}) {
   const name = optionalString(body.name, 'name')
   const email = optionalString(body.email, 'email')?.toLowerCase()
@@ -26,7 +34,7 @@ export function validateDoctorCreation(body = {}) {
     if (!['AVAILABLE', 'BUSY', 'UNAVAILABLE'].includes(body.availability)) throw httpError(400, 'Invalid availability status')
     payload.availability = body.availability
   } else if (body.isAvailable !== undefined) {
-    payload.isAvailable = Boolean(body.isAvailable)
+    payload.isAvailable = optionalBoolean(body.isAvailable, 'isAvailable')
   } else {
     payload.isAvailable = true
   }
@@ -45,7 +53,7 @@ export function validateDoctorUpdate(body = {}) {
     if (!['AVAILABLE', 'BUSY', 'UNAVAILABLE'].includes(body.availability)) throw httpError(400, 'Invalid availability status')
     update.availability = body.availability
   } else if (body.isAvailable !== undefined) {
-    update.isAvailable = Boolean(body.isAvailable)
+    update.isAvailable = optionalBoolean(body.isAvailable, 'isAvailable')
   }
 
   if (Object.keys(update).length === 0) throw httpError(400, 'At least one doctor field must be provided')

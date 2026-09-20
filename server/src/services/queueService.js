@@ -13,13 +13,17 @@ export function isTodayUtc(date) {
 
 export async function issueQueueEntryForAppointment(appointment, database) {
   const queueDate = startOfUtcDay(appointment.scheduledAt)
-  const latest = await database.queueEntry.aggregate({ where: { queueDate }, _max: { tokenNumber: true } })
-  const tokenNumber = (latest._max.tokenNumber || 0) + 1
-  try {
-    return await database.queueEntry.create({ data: { appointmentId: appointment.id, tokenNumber, queueDate } })
-  } catch (error) {
-    if (error.code === 'P2002') throw httpError(409, 'A queue token conflict occurred; please retry the booking')
-    throw error
+  for (let attempt = 0; attempt < 4; attempt += 1) {
+    const latest = await database.queueEntry.aggregate({ where: { queueDate }, _max: { tokenNumber: true } })
+    const tokenNumber = (latest._max.tokenNumber || 0) + 1
+    try {
+      return await database.queueEntry.create({ data: { appointmentId: appointment.id, tokenNumber, queueDate } })
+    } catch (error) {
+      if (error.code !== 'P2002' || attempt === 3) {
+        if (error.code === 'P2002') throw httpError(409, 'A queue token conflict occurred; please retry the booking')
+        throw error
+      }
+    }
   }
 }
 
@@ -34,7 +38,7 @@ const queueInclude = {
 }
 
 function doctorIsAvailable(doctor) {
-  return doctor.availability !== undefined ? doctor.availability === 'AVAILABLE' : doctor.isAvailable
+  return doctor.availability === 'AVAILABLE'
 }
 
 async function assignedQueueEntry(doctorUserId, queueEntryId, database) {

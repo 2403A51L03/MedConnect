@@ -25,7 +25,7 @@ test('call next selects the lowest waiting token and advances after completion',
   const waiting = [queueEntry('two', 2), queueEntry('one', 1), queueEntry('cancelled', 3, 'CANCELLED')]
   let updatedId
   const database = {
-    doctorProfile: { findUnique: async () => ({ id: 'doctor-profile-1', isAvailable: true }) },
+    doctorProfile: { findUnique: async () => ({ id: 'doctor-profile-1', availability: 'AVAILABLE' }) },
     $transaction: async (callback) => callback({
       queueEntry: {
         findFirst: async ({ where }) => where.status === 'IN_PROGRESS' ? null : { id: waiting[1].id },
@@ -40,11 +40,11 @@ test('call next selects the lowest waiting token and advances after completion',
 })
 
 test('call next refuses unavailable doctors and active consultations', async () => {
-  const unavailable = createQueueService({ doctorProfile: { findUnique: async () => ({ id: 'doctor-profile-1', isAvailable: false }) } })
+  const unavailable = createQueueService({ doctorProfile: { findUnique: async () => ({ id: 'doctor-profile-1', availability: 'UNAVAILABLE' }) } })
   await assert.rejects(unavailable.callNext('doctor-user-1'), (error) => error.statusCode === 409)
 
   const active = createQueueService({
-    doctorProfile: { findUnique: async () => ({ id: 'doctor-profile-1', isAvailable: true }) },
+    doctorProfile: { findUnique: async () => ({ id: 'doctor-profile-1', availability: 'AVAILABLE' }) },
     $transaction: async (callback) => callback({ queueEntry: { findFirst: async () => ({ id: 'current' }) } }),
   })
   await assert.rejects(active.callNext('doctor-user-1'), (error) => error.statusCode === 409)

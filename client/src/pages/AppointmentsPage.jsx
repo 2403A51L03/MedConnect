@@ -24,7 +24,7 @@ export function AppointmentsPage() {
   const [message, setMessage] = useState('')
   const [queueStatuses, setQueueStatuses] = useState({})
   const [loading, setLoading] = useState(true)
-  const minDateTime = useMemo(localDateTimeMinimum, [])
+  const minDateTime = useMemo(() => localDateTimeMinimum(), [])
 
   async function refreshAppointments() {
     if (!user) return

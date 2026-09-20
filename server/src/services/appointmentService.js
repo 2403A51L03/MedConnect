@@ -13,7 +13,7 @@ const appointmentInclude = {
 }
 
 function doctorCanReceiveAppointments(doctor) {
-  return doctor.availability !== undefined ? doctor.availability === 'AVAILABLE' : doctor.isAvailable
+  return doctor.availability === 'AVAILABLE'
 }
 
 export function createAppointmentService(database = prisma) {
@@ -51,6 +51,13 @@ export function createAppointmentService(database = prisma) {
     async createWalkIn(patientId, doctorId) {
       const scheduledAt = new Date()
       const result = await database.$transaction(async (transaction) => {
+        const patient = await transaction.user.findUnique({
+          where: { id: patientId },
+          select: { id: true, role: true, patient: { select: { userId: true } } },
+        })
+        if (!patient || patient.role !== 'PATIENT' || !patient.patient) {
+          throw httpError(400, 'Walk-ins can only be registered for patient accounts')
+        }
         const doctor = await transaction.doctorProfile.findUnique({ where: { id: doctorId }, select: { id: true, availability: true } })
         if (!doctor) throw httpError(404, 'Doctor not found')
         if (!doctorCanReceiveAppointments(doctor)) throw httpError(409, 'This doctor is currently unavailable')

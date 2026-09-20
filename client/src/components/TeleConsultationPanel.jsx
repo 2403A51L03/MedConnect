@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { io } from 'socket.io-client'
 import { getAccessToken } from '../services/session.js'
 
-const socketUrl = import.meta.env.VITE_SOCKET_URL || 'http://localhost:4000'
+const socketUrl = import.meta.env.VITE_SOCKET_URL || window.location.origin
 
 function normalizeErrorMessage(error) {
   if (!error) return 'Unable to start the consultation.'
@@ -21,6 +21,9 @@ export function TeleConsultationPanel({ user, queueEntryId, roleLabel = 'Patient
   const peerConnectionRef = useRef(null)
   const streamRef = useRef(null)
   const queueEntryIdRef = useRef(queueEntryId)
+  const pendingCandidatesRef = useRef([])
+  const [isMuted, setIsMuted] = useState(false)
+  const [cameraOff, setCameraOff] = useState(false)
 
   useEffect(() => {
     queueEntryIdRef.current = queueEntryId
@@ -37,13 +40,17 @@ export function TeleConsultationPanel({ user, queueEntryId, roleLabel = 'Patient
     if (peerConnectionRef.current) {
       peerConnectionRef.current.close()
     }
+    pendingCandidatesRef.current = []
   }, [])
 
   async function ensurePeerConnection() {
     if (peerConnectionRef.current) return peerConnectionRef.current
 
     const peerConnection = new RTCPeerConnection({
-      iceServers: [{ urls: 'stun:stun.l.google.com:19302' }],
+      iceServers: [
+        { urls: 'stun:stun.l.google.com:19302' },
+        ...(import.meta.env.VITE_TURN_URL ? [{ urls: import.meta.env.VITE_TURN_URL, username: import.meta.env.VITE_TURN_USERNAME, credential: import.meta.env.VITE_TURN_CREDENTIAL }] : []),
+      ],
     })
 
     peerConnection.ontrack = (event) => {
@@ -115,10 +122,19 @@ export function TeleConsultationPanel({ user, queueEntryId, roleLabel = 'Patient
         }
       })
 
+      socket.on('consultation:participant-joined', async () => {
+        if (user.role !== 'DOCTOR') return
+        const peerConnection = await ensurePeerConnection()
+        const offer = await peerConnection.createOffer()
+        await peerConnection.setLocalDescription(offer)
+        socket.emit('webrtc-offer', { queueEntryId: queueEntryIdRef.current, offer })
+      })
+
       socket.on('webrtc-offer', async ({ offer }) => {
         const peerConnection = await ensurePeerConnection()
         stream.getTracks().forEach((track) => peerConnection.addTrack(track, stream))
         await peerConnection.setRemoteDescription(new RTCSessionDescription(offer))
+        for (const pendingCandidate of pendingCandidatesRef.current.splice(0)) await peerConnection.addIceCandidate(pendingCandidate)
         const answer = await peerConnection.createAnswer()
         await peerConnection.setLocalDescription(answer)
         socket.emit('webrtc-answer', { queueEntryId: queueEntryIdRef.current, answer })
@@ -127,13 +143,16 @@ export function TeleConsultationPanel({ user, queueEntryId, roleLabel = 'Patient
       socket.on('webrtc-answer', async ({ answer }) => {
         const peerConnection = await ensurePeerConnection()
         await peerConnection.setRemoteDescription(new RTCSessionDescription(answer))
+        for (const pendingCandidate of pendingCandidatesRef.current.splice(0)) await peerConnection.addIceCandidate(pendingCandidate)
       })
 
       socket.on('webrtc-ice-candidate', async ({ candidate }) => {
         if (!candidate) return
         const peerConnection = await ensurePeerConnection()
         try {
-          await peerConnection.addIceCandidate(new RTCIceCandidate(candidate))
+          const iceCandidate = new RTCIceCandidate(candidate)
+          if (peerConnection.remoteDescription) await peerConnection.addIceCandidate(iceCandidate)
+          else pendingCandidatesRef.current.push(iceCandidate)
         } catch {
           // ignore stale ICE candidates during reconnect
         }
@@ -177,6 +196,22 @@ export function TeleConsultationPanel({ user, queueEntryId, roleLabel = 'Patient
     if (remoteVideoRef.current) remoteVideoRef.current.srcObject = null
     setStatus('idle')
     setError('')
+    setIsMuted(false)
+    setCameraOff(false)
+  }
+
+  function toggleMicrophone() {
+    const track = streamRef.current?.getAudioTracks()[0]
+    if (!track) return
+    track.enabled = !track.enabled
+    setIsMuted(!track.enabled)
+  }
+
+  function toggleCamera() {
+    const track = streamRef.current?.getVideoTracks()[0]
+    if (!track) return
+    track.enabled = !track.enabled
+    setCameraOff(!track.enabled)
   }
 
   if (!queueEntryId || !user) return null
@@ -184,7 +219,7 @@ export function TeleConsultationPanel({ user, queueEntryId, roleLabel = 'Patient
   return (
     <div className="dashboard-card consultation-card">
       <h3>{roleLabel} consultation</h3>
-      <p className="realtime-status connected">Status: {status}</p>
+      <p className={`realtime-status ${status === 'connected' ? 'connected' : status === 'error' ? 'error' : 'offline'}`}>Status: {status.replaceAll('-', ' ')}</p>
       {error && <p className="dashboard-error">{error}</p>}
       <div className="consultation-videos">
         <video ref={localVideoRef} autoPlay muted playsInline className="video local-video" />
@@ -192,6 +227,7 @@ export function TeleConsultationPanel({ user, queueEntryId, roleLabel = 'Patient
       </div>
       <div className="consultation-actions">
         {status === 'idle' && <button type="button" className="queue-action" onClick={startConsultation}>Join consultation</button>}
+        {status !== 'idle' && status !== 'ended' && <><button type="button" className="queue-action" onClick={toggleMicrophone}>{isMuted ? 'Unmute' : 'Mute'}</button><button type="button" className="queue-action" onClick={toggleCamera}>{cameraOff ? 'Start camera' : 'Stop camera'}</button></>}
         {status !== 'idle' && status !== 'ended' && (
           <button type="button" className="queue-action" onClick={leaveConsultation}>Leave consultation</button>
         )}

@@ -7,6 +7,8 @@ MedConnect is a clinic queue management and tele-consultation platform for patie
 - `client/`: React + Vite frontend with pages, layouts, hooks, and API services
 - `server/`: Express backend with routes, controllers, services, middleware, validation, Prisma database configuration, and Socket.IO/WebRTC signaling
 - `server/prisma/schema.prisma`: PostgreSQL data model for users, roles, doctors, patients, appointments, and queue tokens
+- `PROJECT_MAP.md`: viva-friendly map of the main application flow and files
+- `DEMO_GUIDE.md`: repeatable patient, doctor, and receptionist/admin demonstration
 - `AUDIT_REPORT.md`: baseline repository audit
 - `PROJECT_ROADMAP.md`: schedule through the final viva
 - `INTEGRATION_AUDIT.md`: frontend/backend endpoint and browser verification audit
@@ -61,6 +63,8 @@ npm run dev:client
 
 Open `http://localhost:5173`.
 
+For the Replit preview, the configured workflow runs both services together on port 5000. Vite proxies `/api` and `/socket.io` to the Express server, so the browser uses same-origin URLs in development and preview.
+
 ## Environment variables
 
 Do not commit `.env` files. Use the checked-in `.env.example` templates:
@@ -68,7 +72,7 @@ Do not commit `.env` files. Use the checked-in `.env.example` templates:
 - `server/.env.example` contains server, CORS, database, and JWT settings.
 - `client/.env.example` contains the API base URL.
 
-Authentication, role-based authorization, appointment workflows, notifications, Socket.IO signaling, and WebRTC consultation support are implemented. Their live production behavior still requires a configured PostgreSQL instance, HTTPS deployment, and browser/network verification.
+Authentication, role-based authorization, appointment workflows, notifications, Socket.IO signaling, and WebRTC consultation support are implemented. Automated service tests, Prisma validation, client lint, and the production client build pass in this workspace. Live database-backed flows still require a configured PostgreSQL instance; WebRTC additionally requires HTTPS and two browser sessions with camera/microphone access.
 
 ## Consultation management
 
@@ -172,7 +176,7 @@ Seeded password for every demo account: `MedConnect123!`
 
 Recommended sequence: log in as a patient, choose `Dr. Maya Rao`, book an appointment, and check its queue position. Then log in as the doctor in another browser/private window, review appointments and the queue, call the next patient, start the consultation, and complete it. Completing the consultation automatically calls the next waiting token. Receptionist/admin users can review all appointments, register a patient through `POST /api/patients`, create a walk-in through `POST /api/appointments/walk-in`, and manage a queue by providing the doctor's user ID.
 
-The seed creates three same-day queue entries with tokens 1, 2, and 3. The displayed clock time depends on the machine timezone.
+The seed creates three same-day queue entries with tokens 1, 2, and 3. The displayed clock time depends on the machine timezone. See [DEMO_GUIDE.md](DEMO_GUIDE.md) for the exact walkthrough and expected state transitions.
 
 ## Documentation and deployment status
 

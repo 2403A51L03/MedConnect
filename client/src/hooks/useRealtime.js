@@ -2,12 +2,15 @@ import { useEffect, useRef, useState } from 'react'
 import { io } from 'socket.io-client'
 import { getAccessToken } from '../services/session.js'
 
-const socketUrl = import.meta.env.VITE_SOCKET_URL || 'http://localhost:4000'
+const socketUrl = import.meta.env.VITE_SOCKET_URL || window.location.origin
 
-export function useRealtime(onDataChange) {
+export function useRealtime(onDataChange, userId) {
   const [status, setStatus] = useState('offline')
   const onDataChangeRef = useRef(onDataChange)
-  onDataChangeRef.current = onDataChange
+
+  useEffect(() => {
+    onDataChangeRef.current = onDataChange
+  }, [onDataChange])
 
   useEffect(() => {
     const token = getAccessToken()
@@ -24,7 +27,7 @@ export function useRealtime(onDataChange) {
     socket.on('consultation:available', refresh)
     socket.on('doctor:availability-changed', refresh)
     return () => socket.disconnect()
-  }, [])
+  }, [userId])
 
   return status
 }

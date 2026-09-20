@@ -14,10 +14,10 @@ function App() {
   return (
     <AppLayout>
       <AuthPanel user={user} onChange={setUser} />
-      <HomePage />
-      <DoctorsPage />
-      <AppointmentsPage key={user?.id || 'guest'} />
-      <RoleWorkbench user={user} />
+      <div id="overview"><HomePage /></div>
+      <div id="workspace"><RoleWorkbench user={user} /></div>
+      <div id="doctors"><DoctorsPage /></div>
+      <div id="appointments"><AppointmentsPage key={user?.id || 'guest'} /></div>
     </AppLayout>
   )
 }

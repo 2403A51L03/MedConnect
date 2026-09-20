@@ -8,7 +8,7 @@ export function errorHandler(error, request, response, next) {
   }
 
   console.error(error)
-  const isDatabaseUnavailable = error.name === 'PrismaClientInitializationError' || error.code === 'P1001'
+  const isDatabaseUnavailable = error.name === 'PrismaClientInitializationError' || ['P1001', 'P2021', 'P2022'].includes(error.code)
   response.status(error.statusCode || (isDatabaseUnavailable ? 503 : 500)).json({
     error: error.statusCode
       ? error.message

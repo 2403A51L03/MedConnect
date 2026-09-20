@@ -12,18 +12,18 @@ export function DoctorsPage() {
   const [schedule, setSchedule] = useState([])
   const [status, setStatus] = useState('loading')
   const [refreshKey, setRefreshKey] = useState(0)
-  const viewer = getStoredUser()
+  const viewerRole = getStoredUser()?.role
 
   useEffect(() => {
     let active = true
     const timer = setTimeout(() => {
       setStatus('loading')
-      getDoctors({ search, specialty, available: !viewer || viewer.role === 'PATIENT' })
+      getDoctors({ search, specialty, available: !viewerRole || viewerRole === 'PATIENT' })
         .then((items) => { if (active) { setDoctors(items); setStatus('ready') } })
         .catch(() => active && setStatus('error'))
     }, 250)
     return () => { active = false; clearTimeout(timer) }
-  }, [search, specialty, refreshKey])
+  }, [search, specialty, refreshKey, viewerRole])
 
   async function selectDoctor(doctor) {
     setSelectedDoctor(doctor)

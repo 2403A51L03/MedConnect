@@ -1,0 +1,1052 @@
+Now transform the existing MedConnect project into a polished, capstone-level application.
+
+DO NOT throw away the existing project and build an unrelated application from scratch.
+
+First understand the existing implementation from your audit.
+
+Preserve working functionality where possible, but redesign, refactor and replace weak implementations where necessary.
+
+The final application should feel like a REAL clinic management product rather than a basic student CRUD project.
+
+==================================================
+
+1. CORE PRODUCT
+   ==================================================
+
+MedConnect is:
+
+"A Clinic Queue Management and Tele-Consultation Platform"
+
+The central idea is:
+
+BOOK APPOINTMENT
+↓
+GET TOKEN
+↓
+TRACK LIVE QUEUE
+↓
+GET NOTIFIED
+↓
+JOIN CONSULTATION
+↓
+CONSULTATION COMPLETED
+
+The application must make this workflow obvious.
+
+==================================================
+2. THREE USER EXPERIENCES
+=========================
+
+Build three clearly different experiences.
+
+PATIENT:
+
+* Register/login
+* Patient dashboard
+* Search doctors
+* View doctor information
+* Check doctor availability
+* Book appointment
+* Receive token
+* See current queue position
+* See patients ahead
+* See estimated waiting information where reasonably possible
+* Receive queue notifications
+* See appointment history
+* See consultation history
+* Join tele-consultation
+* Receive relevant notifications
+
+DOCTOR:
+
+* Secure login
+* Doctor dashboard
+* Today's appointments
+* Current queue
+* Current patient
+* Next patient
+* Call next patient
+* Start consultation
+* Complete consultation
+* Doctor availability
+* Consultation history
+* Start tele-consultation
+
+RECEPTIONIST/ADMIN:
+
+* Dashboard
+* Today's appointments
+* Patient management
+* Doctor management
+* Appointment management
+* Walk-in registration
+* Queue management
+* Doctor availability
+* Current clinic activity
+* Ability to monitor queue status
+
+==================================================
+3. PROFESSIONAL UI/UX
+=====================
+
+The current application should NOT look like a generic generated CRUD dashboard.
+
+Redesign the UI as a modern healthcare platform.
+
+Use:
+
+* Clean medical/healthcare visual language
+* Consistent typography
+* Consistent spacing
+* Professional cards
+* Clear status badges
+* Good empty states
+* Good loading states
+* Proper error messages
+* Responsive layout
+* Desktop-first dashboard with mobile support
+* Accessible contrast
+* Consistent navigation
+* Clear primary actions
+
+Do not overuse animations.
+
+Do not create unnecessary decorative elements.
+
+The application should look polished enough for a project demonstration.
+
+==================================================
+4. LANDING PAGE
+===============
+
+Create a professional landing page explaining:
+
+MEDCONNECT
+
+Clinic Queue Management + Tele-Consultation
+
+Sections:
+
+* Hero
+* Problem
+* How MedConnect works
+* Key features
+* Patient experience
+* Doctor experience
+* Real-time queue explanation
+* Tele-consultation
+* Security/RBAC
+* Call to action
+* Footer
+
+The landing page should make the project's purpose immediately understandable.
+
+==================================================
+5. PATIENT DASHBOARD
+====================
+
+Create a useful patient dashboard.
+
+Show:
+
+* Welcome section
+* Next appointment
+* Current doctor
+* Token number
+* Current queue position
+* Patients ahead
+* Queue status
+* Doctor availability
+* Notifications
+* Recent appointments
+* Consultation history
+
+The queue should be the visual focus when the patient has an active appointment.
+
+Example:
+
+YOUR TOKEN
+A-024
+
+CURRENTLY SERVING
+A-019
+
+YOU ARE
+5 PATIENTS AWAY
+
+This should update in real time.
+
+==================================================
+6. DOCTOR DASHBOARD
+===================
+
+Create a doctor dashboard showing:
+
+* Today's appointments
+* Waiting patients
+* Current patient
+* Next patient
+* Queue length
+* Doctor availability
+* Consultation actions
+
+Main queue section:
+
+CURRENT PATIENT
+Token A-019
+
+NEXT PATIENT
+Token A-020
+
+WAITING
+8 patients
+
+Actions:
+
+CALL NEXT
+START CONSULTATION
+COMPLETE CONSULTATION
+
+Make the workflow extremely easy to understand.
+
+==================================================
+7. RECEPTIONIST DASHBOARD
+=========================
+
+Create a clinic operations dashboard.
+
+Show:
+
+* Today's total appointments
+* Waiting patients
+* In consultation
+* Completed
+* Available doctors
+* Current queues
+
+Include:
+
+* Register patient
+* Create appointment
+* Add walk-in
+* Manage queue
+* View doctor status
+
+The receptionist should be able to understand the clinic situation from one screen.
+
+==================================================
+8. APPOINTMENT SYSTEM
+=====================
+
+Implement a proper appointment workflow.
+
+Patient:
+
+Select doctor
+→ View availability
+→ Select date/time
+→ Confirm appointment
+→ Receive appointment details
+→ Receive token when appropriate
+
+Handle:
+
+* Invalid appointment
+* Conflicting appointment
+* Cancelled appointment
+* Doctor unavailable
+* Unauthorized access
+
+Use clear appointment statuses:
+
+SCHEDULED
+WAITING
+IN_CONSULTATION
+COMPLETED
+CANCELLED
+
+Only use statuses that make sense for the actual implementation.
+
+==================================================
+9. QUEUE MANAGEMENT
+===================
+
+This is the MOST IMPORTANT feature of MedConnect.
+
+Build a convincing queue system.
+
+Each patient receives a token.
+
+Example:
+
+A-019
+A-020
+A-021
+A-022
+A-023
+
+The patient sees:
+
+Current token: A-019
+Your token: A-023
+Patients ahead: 3
+
+Doctor sees:
+
+Current: A-019
+Next: A-020
+
+Receptionist sees:
+
+Full queue.
+
+Queue states should include:
+
+WAITING
+CALLED
+IN_CONSULTATION
+COMPLETED
+CANCELLED
+
+The queue should advance correctly.
+
+When the doctor completes a consultation:
+
+Current patient becomes COMPLETED.
+
+Next patient becomes eligible.
+
+The queue updates.
+
+==================================================
+10. REAL-TIME QUEUE
+===================
+
+Use Socket.IO.
+
+Patients should NOT need to refresh the browser to see queue changes.
+
+When:
+
+Doctor calls next patient
+OR
+Consultation completes
+OR
+Queue position changes
+OR
+Doctor availability changes
+
+relevant clients should receive real-time updates.
+
+Demonstrate this using multiple browser windows during the viva.
+
+Example:
+
+Browser 1:
+Doctor dashboard
+
+Browser 2:
+Patient dashboard
+
+Doctor clicks:
+
+CALL NEXT
+
+Patient immediately sees:
+
+"Your turn is approaching"
+
+and the queue position updates.
+
+==================================================
+11. NOTIFICATIONS
+=================
+
+Implement useful notifications.
+
+Examples:
+
+"Appointment confirmed."
+
+"Your token is A-024."
+
+"You are now 3 patients away."
+
+"Please get ready. You are next."
+
+"Doctor has called your token."
+
+"Your consultation is ready."
+
+Do not create meaningless notifications.
+
+Use Socket.IO for real-time notification delivery where appropriate.
+
+==================================================
+12. WALK-IN PATIENTS
+====================
+
+Receptionist should be able to add a walk-in patient.
+
+Workflow:
+
+Register/select patient
+→ Select doctor
+→ Add walk-in
+→ Generate token
+→ Add to queue
+
+Clearly distinguish appointment patients and walk-ins where useful.
+
+Do not create complicated queue rules.
+
+Choose a simple deterministic ordering rule and document it.
+
+==================================================
+13. DOCTOR AVAILABILITY
+=======================
+
+Doctors should have a clear availability state.
+
+Examples:
+
+AVAILABLE
+IN CONSULTATION
+UNAVAILABLE
+
+This state should be visible to:
+
+* Patients
+* Receptionist
+* Doctor
+
+Update it consistently.
+
+==================================================
+14. TELE-CONSULTATION
+=====================
+
+Implement WebRTC tele-consultation.
+
+The consultation page should have:
+
+Doctor video
+Patient video
+Microphone control
+Camera control
+Leave/end call
+
+Use Socket.IO for signaling.
+
+Do not send video through the Express server.
+
+Handle:
+
+* Camera permission
+* Microphone permission
+* Connection failure
+* Leaving the call
+* Doctor ending the consultation
+
+The interface should look like an actual video consultation screen.
+
+==================================================
+15. CONSULTATION RECORD
+=======================
+
+After consultation, store appropriate information.
+
+At minimum:
+
+* Patient
+* Doctor
+* Appointment
+* Start time
+* End time
+* Status
+* Notes if already supported by the project
+
+Patients should see their consultation history.
+
+Doctors should see relevant consultation history.
+
+Users must never be able to access another patient's private information.
+
+==================================================
+16. AUTHENTICATION
+==================
+
+Keep JWT authentication.
+
+Implement:
+
+* Registration
+* Login
+* Logout
+* Protected routes
+* Password hashing
+* Role-based authorization
+
+Roles:
+
+PATIENT
+DOCTOR
+RECEPTIONIST/ADMIN
+
+Prevent unauthorized role access.
+
+==================================================
+17. SECURITY
+============
+
+Audit the entire application for:
+
+* Password security
+* JWT security
+* Authorization
+* Object-level access control
+* Input validation
+* CORS
+* Environment variables
+* Sensitive data exposure
+* API security
+* Socket authentication where appropriate
+
+Never expose:
+
+* Database passwords
+* JWT secrets
+* API secrets
+
+Do not commit .env.
+
+Create .env.example.
+
+==================================================
+18. DATABASE
+============
+
+Keep PostgreSQL + Prisma.
+
+The schema should clearly represent:
+
+User
+Patient
+Doctor
+Appointment
+Queue
+Consultation
+Notification
+
+Use relationships that are easy to explain.
+
+Do not create unnecessary tables.
+
+The database should support:
+
+Patient
+↓
+Appointment
+↓
+Queue Token
+↓
+Consultation
+
+Explainable database design is more important than maximum normalization.
+
+==================================================
+19. API DESIGN
+==============
+
+Keep the API simple and predictable.
+
+Group endpoints logically.
+
+Examples:
+
+/api/auth
+/api/doctors
+/api/patients
+/api/appointments
+/api/queue
+/api/consultations
+/api/notifications
+
+Do not create dozens of micro-endpoints unnecessarily.
+
+Use consistent:
+
+* HTTP methods
+* status codes
+* response format
+* validation
+* error handling
+
+==================================================
+20. ERROR HANDLING
+==================
+
+The application must not look broken when something goes wrong.
+
+Handle:
+
+* Network errors
+* Invalid forms
+* Invalid login
+* Unauthorized requests
+* Empty queues
+* No appointments
+* Doctor unavailable
+* Failed WebRTC connection
+* Database errors
+
+Use user-friendly messages.
+
+Do not display raw backend stack traces.
+
+==================================================
+21. CODE SIMPLICITY / FILE COUNT
+================================
+
+THIS IS A VERY IMPORTANT REQUIREMENT.
+
+Keep the number of files LOW.
+
+I need to be able to navigate the project quickly during my B.Tech project review and viva.
+
+Do NOT create hundreds of files.
+
+Do NOT create a file for every tiny component.
+
+Do NOT introduce complicated enterprise architecture.
+
+Prefer logical grouping.
+
+For example, it is acceptable to have:
+
+Frontend:
+
+App.jsx
+pages.jsx
+components.jsx
+api.js
+auth.jsx
+styles.css
+
+Backend:
+
+index.js
+routes.js
+auth.js
+queue.js
+database.js
+
+Database:
+
+prisma/schema.prisma
+
+The exact structure can differ if the existing project has a better simple structure.
+
+But the final structure should make it obvious:
+
+WHERE IS AUTH?
+WHERE IS QUEUE?
+WHERE IS DATABASE?
+WHERE ARE APIs?
+WHERE ARE PAGES?
+WHERE IS REAL-TIME LOGIC?
+WHERE IS WEBRTC?
+
+A student should be able to open the relevant file within seconds when a project guide asks:
+
+"Show me where you implemented the queue."
+
+"Show me the authentication."
+
+"Show me the database schema."
+
+"Show me Socket.IO."
+
+"Show me the appointment API."
+
+"Show me the WebRTC implementation."
+
+==================================================
+22. DO NOT OVER-ABSTRACT
+========================
+
+Avoid unnecessary:
+
+* repositories
+* factories
+* interfaces
+* dependency injection containers
+* service layers for trivial CRUD
+* custom frameworks
+* excessive hooks
+* excessive contexts
+* excessive components
+* excessive utility files
+
+Use abstraction only when it genuinely improves the project.
+
+The project must be easy for a student to understand.
+
+==================================================
+23. DEMO DATA
+=============
+
+Create realistic development/demo data.
+
+Include:
+
+Several doctors.
+
+Several patients.
+
+Several appointments.
+
+A realistic active queue.
+
+Different appointment statuses.
+
+Example specialties:
+
+General Physician
+Cardiology
+Dermatology
+Pediatrics
+
+Use fictional data only.
+
+Create obvious demo accounts for:
+
+Patient
+Doctor
+Receptionist
+
+Document the credentials in the README for development/demo purposes.
+
+Never use real patient information.
+
+==================================================
+24. DEMO EXPERIENCE
+===================
+
+The project must support this exact demonstration:
+
+STEP 1
+
+Open MedConnect.
+
+Show landing page.
+
+STEP 2
+
+Login as Patient.
+
+Book an appointment.
+
+Receive token.
+
+STEP 3
+
+Show patient queue.
+
+Example:
+
+Current token: A-019
+Your token: A-023
+Patients ahead: 3
+
+STEP 4
+
+Open Doctor dashboard in another browser.
+
+Show the same queue.
+
+STEP 5
+
+Doctor clicks:
+
+CALL NEXT
+
+STEP 6
+
+Patient dashboard updates automatically.
+
+STEP 7
+
+Doctor starts consultation.
+
+STEP 8
+
+Show WebRTC consultation.
+
+STEP 9
+
+Complete consultation.
+
+STEP 10
+
+Queue advances.
+
+STEP 11
+
+Patient sees consultation history.
+
+STEP 12
+
+Open Receptionist dashboard and show clinic-wide queue/appointment status.
+
+This should be our main project demonstration.
+
+==================================================
+25. DASHBOARD CONSISTENCY
+=========================
+
+The same underlying database state must appear consistently across:
+
+Patient
+Doctor
+Receptionist
+
+Do not fake queue numbers in the frontend.
+
+The database should be the source of truth.
+
+Socket.IO should communicate changes.
+
+==================================================
+26. LOADING / EMPTY STATES
+==========================
+
+Every important page should have:
+
+Loading state
+Empty state
+Error state
+Success feedback
+
+Examples:
+
+"No upcoming appointments."
+
+"No patients are currently waiting."
+
+"No consultation history yet."
+
+"Unable to load queue. Please try again."
+
+This makes the application feel complete.
+
+==================================================
+27. RESPONSIVENESS
+==================
+
+Make the application responsive.
+
+Test:
+
+Desktop
+Laptop
+Tablet
+Mobile-width browser
+
+Do not completely redesign the application for mobile.
+
+Keep the desktop experience as the priority because this is primarily a project demonstration.
+
+==================================================
+28. PROJECT DOCUMENTATION
+=========================
+
+Update README.md.
+
+It should contain:
+
+* Project title
+* Problem statement
+* Objectives
+* Features
+* User roles
+* Architecture
+* Technology stack
+* Database overview
+* Real-time communication
+* WebRTC explanation
+* Installation
+* Environment variables
+* Database setup
+* Running the project
+* Demo accounts
+* API overview
+* Testing
+* Deployment
+* Known limitations
+
+Documentation must describe what ACTUALLY EXISTS in the final code.
+
+==================================================
+29. CAPSTONE PRESENTATION QUALITY
+=================================
+
+The application should clearly demonstrate the project's technical contribution.
+
+The important innovations from the original project concept are:
+
+1. Real-time queue visibility
+2. Integration of appointment and queue management
+3. Socket.IO-based real-time updates
+4. WebRTC tele-consultation
+5. Role-based dashboards
+6. Centralized clinic management
+
+These should be visible in the actual application, not merely mentioned in the README.
+
+==================================================
+30. DEVELOPMENT STRATEGY
+========================
+
+Do not attempt to change everything simultaneously.
+
+Work in stages:
+
+STAGE 1
+Audit and architecture cleanup.
+
+STAGE 2
+Database and backend correctness.
+
+STAGE 3
+Authentication and RBAC.
+
+STAGE 4
+Appointment system.
+
+STAGE 5
+Queue/token system.
+
+STAGE 6
+Professional dashboards/UI.
+
+STAGE 7
+Socket.IO real-time updates.
+
+STAGE 8
+Notifications.
+
+STAGE 9
+Consultation management.
+
+STAGE 10
+WebRTC.
+
+STAGE 11
+Testing/security/error handling.
+
+STAGE 12
+Deployment/documentation.
+
+After each stage:
+
+* Run the application
+* Test the relevant workflow
+* Fix errors
+* Do not continue while major regressions exist
+
+==================================================
+31. DO NOT BREAK WORKING FEATURES
+=================================
+
+Before modifying an existing feature:
+
+Understand how it currently works.
+
+Preserve working functionality where possible.
+
+If you need to replace something, explain:
+
+WHAT is being replaced
+WHY
+WHAT will replace it
+
+Do not blindly delete large sections of the project.
+
+==================================================
+32. FINAL QUALITY STANDARD
+==========================
+
+The finished MedConnect application should feel like:
+
+A coherent healthcare platform with a clear real-world problem and solution.
+
+It should NOT feel like:
+
+* A collection of CRUD pages
+* A template dashboard
+* A collection of disconnected AI-generated features
+* A fake prototype with hardcoded data
+* An over-engineered enterprise application
+
+The most important quality is:
+
+EVERY MAJOR FEATURE MUST WORK TOGETHER.
+
+Appointment
+↓
+Queue
+↓
+Real-time update
+↓
+Doctor
+↓
+Consultation
+↓
+WebRTC
+↓
+Completion
+↓
+History
+
+==================================================
+33. AFTER IMPLEMENTATION
+========================
+
+When finished, create:
+
+PROJECT_MAP.md
+
+This file should contain a simple explanation:
+
+FILE → PURPOSE → IMPORTANT FUNCTIONS
+
+For example:
+
+server/queue.js
+→ Queue management
+→ generateToken(), callNextPatient(), completeConsultation()
+
+server/auth.js
+→ Authentication and authorization
+→ login(), register(), requireAuth(), requireRole()
+
+prisma/schema.prisma
+→ Database structure
+→ User, Doctor, Patient, Appointment, Queue, Consultation
+
+client/src/pages.jsx
+→ Main application pages
+→ Patient dashboard, Doctor dashboard, Receptionist dashboard
+
+This file is specifically for helping me navigate the code during my project viva.
+
+Also create:
+
+DEMO_GUIDE.md
+
+with the exact steps I should follow during my project demonstration.
+
+Do not mark anything complete unless it has actually been implemented and tested.
+
+Start with the highest-priority improvements from the existing codebase rather than blindly following this prompt if the current implementation already solves something correctly.

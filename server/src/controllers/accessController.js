@@ -22,8 +22,12 @@ export const getConsultationHistory = asyncHandler(async (request, response) => 
     throw Object.assign(new Error('You do not have permission to access this consultation history'), { statusCode: 403 })
   }
 
+  const where = request.auth.role === 'DOCTOR'
+    ? { doctor: { userId } }
+    : { appointment: { patientId: userId } }
+
   const consultations = await prisma.consultation.findMany({
-    where: { appointment: { patientId: userId } },
+    where,
     orderBy: { createdAt: 'desc' },
     include: {
       appointment: {
@@ -113,4 +117,13 @@ export const listPatients = asyncHandler(async (request, response) => {
     select: { id: true, name: true, email: true, phone: true, createdAt: true },
   })
   response.json({ patients })
+})
+
+export const markNotificationRead = asyncHandler(async (request, response) => {
+  const notification = await prisma.notification.updateMany({
+    where: { id: request.params.notificationId, userId: request.auth.userId, readAt: null },
+    data: { readAt: new Date() },
+  })
+  if (notification.count === 0) return response.status(404).json({ error: 'Notification not found' })
+  response.json({ notification: { id: request.params.notificationId, readAt: new Date() } })
 })

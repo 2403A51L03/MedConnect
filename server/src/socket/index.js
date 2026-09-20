@@ -28,6 +28,7 @@ export function configureSocketAuthentication(io) {
 
 export function registerSocketHandlers(io) {
   io.on('connection', (socket) => {
+    socket.data.consultationIds = new Set()
     socket.join(`user:${socket.auth.userId}`)
     socket.emit('connection:ready', { socketId: socket.id })
     if (socket.auth.role === 'DOCTOR') {
@@ -69,6 +70,7 @@ export function registerSocketHandlers(io) {
         }
 
         socket.join(`consultation:${queueEntryId}`)
+        socket.data.consultationIds.add(queueEntryId)
         socket.emit('consultation:joined', { queueEntryId: queueEntry.id, appointmentId: queueEntry.appointmentId })
         socket.to(`consultation:${queueEntryId}`).emit('consultation:participant-joined', {
           userId: socket.auth.userId,
@@ -81,23 +83,24 @@ export function registerSocketHandlers(io) {
     })
 
     socket.on('webrtc-offer', ({ queueEntryId, offer }) => {
-      if (!queueEntryId || !offer) return
+      if (!queueEntryId || !offer || !socket.data.consultationIds.has(queueEntryId)) return
       socket.to(`consultation:${queueEntryId}`).emit('webrtc-offer', { fromUserId: socket.auth.userId, offer })
     })
 
     socket.on('webrtc-answer', ({ queueEntryId, answer }) => {
-      if (!queueEntryId || !answer) return
+      if (!queueEntryId || !answer || !socket.data.consultationIds.has(queueEntryId)) return
       socket.to(`consultation:${queueEntryId}`).emit('webrtc-answer', { fromUserId: socket.auth.userId, answer })
     })
 
     socket.on('webrtc-ice-candidate', ({ queueEntryId, candidate }) => {
-      if (!queueEntryId || !candidate) return
+      if (!queueEntryId || !candidate || !socket.data.consultationIds.has(queueEntryId)) return
       socket.to(`consultation:${queueEntryId}`).emit('webrtc-ice-candidate', { fromUserId: socket.auth.userId, candidate })
     })
 
     socket.on('leave-consultation', ({ queueEntryId }) => {
-      if (!queueEntryId) return
+      if (!queueEntryId || !socket.data.consultationIds.has(queueEntryId)) return
       socket.leave(`consultation:${queueEntryId}`)
+      socket.data.consultationIds.delete(queueEntryId)
       socket.to(`consultation:${queueEntryId}`).emit('consultation:ended', { queueEntryId, endedBy: socket.auth.userId })
     })
   })

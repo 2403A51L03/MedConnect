@@ -1,5 +1,5 @@
 import { Router } from 'express'
-import { callNextPatient, completeConsultation, getConsultationHistory, getNotifications, getQueueEntry, listDoctorQueue, listPatients, listUserAppointments, startConsultation, updateDoctorAvailability } from '../controllers/accessController.js'
+import { callNextPatient, completeConsultation, getConsultationHistory, getNotifications, getQueueEntry, listDoctorQueue, listPatients, listUserAppointments, markNotificationRead, startConsultation, updateDoctorAvailability } from '../controllers/accessController.js'
 import { authorizeRoles, authorizeSelfOrRoles, requireAuth } from '../middleware/authMiddleware.js'
 
 export const accessRoutes = Router()
@@ -25,6 +25,7 @@ accessRoutes.get(
   getConsultationHistory,
 )
 accessRoutes.get('/users/:userId/notifications', requireAuth, authorizeSelfOrRoles('userId', 'RECEPTIONIST', 'ADMIN'), getNotifications)
+accessRoutes.patch('/notifications/:notificationId/read', requireAuth, markNotificationRead)
 accessRoutes.get('/patients', requireAuth, authorizeRoles('RECEPTIONIST', 'ADMIN'), listPatients)
 accessRoutes.patch(
   '/doctors/:userId/availability',

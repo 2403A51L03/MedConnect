@@ -1,4 +1,6 @@
 export function DoctorCard({ doctor, selected, onSelect }) {
+  const availabilityLabel = doctor.availability === 'BUSY' ? 'In consultation' : doctor.availability === 'UNAVAILABLE' ? 'Unavailable' : 'Available'
+  const availabilityClass = doctor.availability === 'BUSY' ? 'busy' : doctor.availability === 'UNAVAILABLE' ? 'offline' : ''
   return (
     <article className={`doctor-card ${selected ? 'selected' : ''}`}>
       <div className="doctor-avatar" aria-hidden="true">{doctor.name.slice(0, 1)}</div>
@@ -8,11 +10,11 @@ export function DoctorCard({ doctor, selected, onSelect }) {
             <h3>{doctor.name}</h3>
             <p>{doctor.specialization || 'General medicine'}</p>
           </div>
-          <span className="availability"><span /> Available</span>
+          <span className={`availability ${availabilityClass}`}><span /> {availabilityLabel}</span>
         </div>
         <p className="doctor-contact">{doctor.email}</p>
-        <button type="button" className="select-doctor" onClick={() => onSelect(doctor)}>
-          {selected ? 'Selected for booking' : 'Select doctor'}
+        <button type="button" className="select-doctor" onClick={() => onSelect(doctor)} disabled={!doctor.isAvailable}>
+          {selected ? 'Selected for booking' : doctor.isAvailable ? 'View schedule' : 'Currently unavailable'}
         </button>
       </div>
     </article>
