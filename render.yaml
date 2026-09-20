@@ -7,6 +7,7 @@ services:
     buildCommand: npm ci && npm run prisma:generate && npm run prisma:migrate:deploy
     startCommand: npm start
     healthCheckPath: /api/health/ready
+
     envVars:
       - key: NODE_ENV
         value: production
@@ -29,10 +30,10 @@ services:
   - type: web
     name: medconnect-client
     runtime: static
-    plan: free
     rootDir: client
     buildCommand: npm ci && npm run build
     staticPublishPath: ./dist
+
     envVars:
       - key: VITE_API_URL
         sync: false
