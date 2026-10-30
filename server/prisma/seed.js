@@ -12,7 +12,7 @@ function hashPassword(password) {
 async function upsertUser({ name, email, role, passwordHash, phone = null }) {
   return prisma.user.upsert({
     where: { email },
-    update: { name, role, passwordHash, phone },
+    update: {},
     create: { name, email, role, passwordHash, phone },
   })
 }
@@ -27,7 +27,7 @@ async function upsertDoctor(doctor) {
   const user = await upsertUser({ ...doctor, role: 'DOCTOR', passwordHash })
   const profile = await prisma.doctorProfile.upsert({
     where: { userId: user.id },
-    update: { specialization: doctor.specialization, availability: doctor.availability || 'AVAILABLE' },
+    update: {},
     create: { userId: user.id, specialization: doctor.specialization, availability: doctor.availability || 'AVAILABLE' },
   })
   return { user, profile }
@@ -64,20 +64,29 @@ async function main() {
 
   const now = new Date()
   const queueDate = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()))
+  const latestQueueEntry = await prisma.queueEntry.aggregate({
+    where: { queueDate },
+    _max: { tokenNumber: true },
+  })
+  let nextTokenNumber = (latestQueueEntry._max.tokenNumber || 0) + 1
   const appointments = []
   for (const [index, patient] of patients.entries()) {
     const scheduledAt = new Date(now.getTime() + (index + 1) * 30 * 60 * 1000)
     const doctor = doctors[index % doctors.length]
     const appointment = await prisma.appointment.upsert({
       where: { id: `seed-appointment-${index + 1}` },
-      update: { patientId: patient.id, doctorId: doctor.profile.id, scheduledAt, status: 'BOOKED' },
+      update: {},
       create: { id: `seed-appointment-${index + 1}`, patientId: patient.id, doctorId: doctor.profile.id, scheduledAt },
     })
-    await prisma.queueEntry.upsert({ where: { appointmentId: appointment.id }, update: { tokenNumber: index + 1, queueDate, status: 'WAITING' }, create: { appointmentId: appointment.id, tokenNumber: index + 1, queueDate } })
+    await prisma.queueEntry.upsert({
+      where: { appointmentId: appointment.id },
+      update: {},
+      create: { appointmentId: appointment.id, tokenNumber: nextTokenNumber++, queueDate },
+    })
     appointments.push(appointment)
     await prisma.notification.upsert({
       where: { id: `seed-notification-${index + 1}` },
-      update: { userId: patient.id, title: 'Appointment confirmed', message: `Your appointment with ${doctor.user.name} is confirmed.` },
+      update: {},
       create: { id: `seed-notification-${index + 1}`, userId: patient.id, type: 'APPOINTMENT', title: 'Appointment confirmed', message: `Your appointment with ${doctor.user.name} is confirmed.` },
     })
   }
