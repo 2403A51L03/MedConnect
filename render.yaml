@@ -27,6 +27,12 @@ services:
       - key: CLIENT_ORIGIN
         sync: false
 
+      - key: METERED_TURN_APP_URL
+        sync: false
+
+      - key: METERED_TURN_API_KEY
+        sync: false
+
   - type: web
     name: medconnect-client
     runtime: static
@@ -39,13 +45,4 @@ services:
         sync: false
 
       - key: VITE_SOCKET_URL
-        sync: false
-
-      - key: VITE_TURN_URL
-        sync: false
-
-      - key: VITE_TURN_USERNAME
-        sync: false
-
-      - key: VITE_TURN_CREDENTIAL
         sync: false

@@ -20,4 +20,6 @@ export const env = {
   databaseUrl: process.env.DATABASE_URL || '',
   jwtSecret: process.env.JWT_SECRET || 'development-only-secret-change-me',
   jwtExpiresIn: process.env.JWT_EXPIRES_IN || '1h',
+  meteredTurnAppUrl: process.env.METERED_TURN_APP_URL || '',
+  meteredTurnApiKey: process.env.METERED_TURN_API_KEY || '',
 }

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { io } from 'socket.io-client'
+import { requestApi } from '../services/api.js'
 import { getAccessToken } from '../services/session.js'
 
 function getSocketUrl() {
@@ -11,6 +12,17 @@ function getSocketUrl() {
 }
 
 const socketUrl = getSocketUrl()
+const defaultIceServers = [
+  { urls: 'stun:stun.l.google.com:19302' },
+  { urls: 'stun:stun1.l.google.com:19302' },
+]
+
+function hasTurnServer(iceServers) {
+  return iceServers.some((server) => {
+    const urls = Array.isArray(server.urls) ? server.urls : [server.urls]
+    return urls.some((url) => typeof url === 'string' && /^(turn|turns):/i.test(url))
+  })
+}
 
 function normalizeErrorMessage(error) {
   if (!error) return 'Unable to start the consultation.'
@@ -32,8 +44,11 @@ export function TeleConsultationPanel({ user, queueEntryId, roleLabel = 'Patient
   const offerInProgressRef = useRef(false)
   const queueEntryIdRef = useRef(queueEntryId)
   const pendingCandidatesRef = useRef([])
+  const iceServersRef = useRef(defaultIceServers)
+  const turnConfiguredRef = useRef(false)
   const [isMuted, setIsMuted] = useState(false)
   const [cameraOff, setCameraOff] = useState(false)
+  const [remotePlaybackNeedsGesture, setRemotePlaybackNeedsGesture] = useState(false)
 
   useEffect(() => {
     queueEntryIdRef.current = queueEntryId
@@ -58,24 +73,25 @@ export function TeleConsultationPanel({ user, queueEntryId, roleLabel = 'Patient
   async function ensurePeerConnection() {
     if (peerConnectionRef.current) return peerConnectionRef.current
 
-    const iceServers = [
-      { urls: 'stun:stun.l.google.com:19302' },
-      { urls: 'stun:stun1.l.google.com:19302' },
-      ...(import.meta.env.VITE_TURN_URL ? [{ urls: import.meta.env.VITE_TURN_URL, username: import.meta.env.VITE_TURN_USERNAME, credential: import.meta.env.VITE_TURN_CREDENTIAL }] : []),
-    ]
-    const peerConnection = new RTCPeerConnection({ iceServers })
+    const peerConnection = new RTCPeerConnection({ iceServers: iceServersRef.current })
 
     peerConnection.ontrack = (event) => {
       if (!remoteVideoRef.current) return
       if (event.streams[0]) {
         remoteVideoRef.current.srcObject = event.streams[0]
-        remoteVideoRef.current.play().catch(() => {})
+        remoteVideoRef.current.play().then(
+          () => setRemotePlaybackNeedsGesture(false),
+          () => setRemotePlaybackNeedsGesture(true),
+        )
         return
       }
       const remoteStream = remoteVideoRef.current.srcObject || new MediaStream()
       remoteStream.addTrack(event.track)
       remoteVideoRef.current.srcObject = remoteStream
-      remoteVideoRef.current.play().catch(() => {})
+      remoteVideoRef.current.play().then(
+        () => setRemotePlaybackNeedsGesture(false),
+        () => setRemotePlaybackNeedsGesture(true),
+      )
     }
 
     peerConnection.onicecandidate = (event) => {
@@ -93,7 +109,9 @@ export function TeleConsultationPanel({ user, queueEntryId, roleLabel = 'Patient
         setError('')
       } else if (peerConnection.connectionState === 'failed' || peerConnection.connectionState === 'disconnected') {
         setStatus('connection-failed')
-        setError('Audio/video connection failed. Check camera and microphone permissions, then retry or rejoin.')
+        setError(turnConfiguredRef.current
+          ? 'Audio/video could not connect. Check the TURN service, network/firewall settings, then leave and rejoin.'
+          : 'Audio/video could not connect. No TURN relay is configured; add the Metered Open Relay settings to the API service, then leave and rejoin.')
       }
     }
 
@@ -121,11 +139,29 @@ export function TeleConsultationPanel({ user, queueEntryId, roleLabel = 'Patient
     }
 
     try {
+      setStatus('joining')
+      iceServersRef.current = defaultIceServers
+      turnConfiguredRef.current = false
+      try {
+        const { iceServers } = await requestApi('/realtime/ice-servers')
+        if (!Array.isArray(iceServers)) throw new Error('The server returned invalid TURN settings.')
+        iceServersRef.current = [...defaultIceServers, ...iceServers]
+        turnConfiguredRef.current = hasTurnServer(iceServers)
+        if (!turnConfiguredRef.current) {
+          setError('TURN relay is not configured; attempting a direct connection. Configure Metered Open Relay on the API service if the call cannot connect.')
+        }
+      } catch (turnError) {
+        console.error('Unable to load TURN relay configuration', turnError)
+        setError('TURN relay settings could not be loaded; attempting a direct connection. The call may not connect on restrictive networks.')
+      }
+
       const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true })
       streamRef.current = stream
       if (localVideoRef.current) {
         localVideoRef.current.srcObject = stream
-        localVideoRef.current.play().catch(() => {})
+        localVideoRef.current.play().catch((playbackError) => {
+          setError(`Your local preview could not start: ${normalizeErrorMessage(playbackError)}`)
+        })
       }
 
       const socket = io(socketUrl, {
@@ -151,46 +187,66 @@ export function TeleConsultationPanel({ user, queueEntryId, roleLabel = 'Patient
         }
       }
 
+      function handleSignalingFailure(signalingError) {
+        console.error('WebRTC signaling failed', signalingError)
+        setStatus('error')
+        setError(signalingError.message || 'Unable to negotiate the audio/video connection.')
+      }
+
       socket.on('connect', () => {
         setStatus('joining')
         socket.emit('join-consultation', { queueEntryId: queueEntryIdRef.current })
       })
 
       socket.on('consultation:joined', async ({ participantPresent }) => {
-        setStatus('joining')
-        const peerConnection = await ensurePeerConnection()
-        addLocalTracks(peerConnection, stream)
-        if (user.role === 'DOCTOR' && participantPresent) await sendDoctorOffer()
+        try {
+          setStatus('joining')
+          const peerConnection = await ensurePeerConnection()
+          addLocalTracks(peerConnection, stream)
+          if (user.role === 'DOCTOR' && participantPresent) await sendDoctorOffer()
+        } catch (signalingError) {
+          handleSignalingFailure(signalingError)
+        }
       })
 
-      socket.on('consultation:participant-joined', sendDoctorOffer)
+      socket.on('consultation:participant-joined', () => {
+        sendDoctorOffer().catch(handleSignalingFailure)
+      })
 
       socket.on('webrtc-offer', async ({ offer }) => {
-        const peerConnection = await ensurePeerConnection()
-        addLocalTracks(peerConnection, stream)
-        await peerConnection.setRemoteDescription(new RTCSessionDescription(offer))
-        for (const pendingCandidate of pendingCandidatesRef.current.splice(0)) await peerConnection.addIceCandidate(pendingCandidate)
-        const answer = await peerConnection.createAnswer()
-        await peerConnection.setLocalDescription(answer)
-        socket.emit('webrtc-answer', { queueEntryId: queueEntryIdRef.current, answer })
+        try {
+          const peerConnection = await ensurePeerConnection()
+          addLocalTracks(peerConnection, stream)
+          await peerConnection.setRemoteDescription(new RTCSessionDescription(offer))
+          for (const pendingCandidate of pendingCandidatesRef.current.splice(0)) await peerConnection.addIceCandidate(pendingCandidate)
+          const answer = await peerConnection.createAnswer()
+          await peerConnection.setLocalDescription(answer)
+          socket.emit('webrtc-answer', { queueEntryId: queueEntryIdRef.current, answer })
+        } catch (signalingError) {
+          handleSignalingFailure(signalingError)
+        }
       })
 
       socket.on('webrtc-answer', async ({ answer }) => {
-        const peerConnection = await ensurePeerConnection()
-        if (peerConnection.signalingState !== 'have-local-offer') return
-        await peerConnection.setRemoteDescription(new RTCSessionDescription(answer))
-        for (const pendingCandidate of pendingCandidatesRef.current.splice(0)) await peerConnection.addIceCandidate(pendingCandidate)
+        try {
+          const peerConnection = await ensurePeerConnection()
+          if (peerConnection.signalingState !== 'have-local-offer') return
+          await peerConnection.setRemoteDescription(new RTCSessionDescription(answer))
+          for (const pendingCandidate of pendingCandidatesRef.current.splice(0)) await peerConnection.addIceCandidate(pendingCandidate)
+        } catch (signalingError) {
+          handleSignalingFailure(signalingError)
+        }
       })
 
       socket.on('webrtc-ice-candidate', async ({ candidate }) => {
         if (!candidate) return
-        const peerConnection = await ensurePeerConnection()
         try {
+          const peerConnection = await ensurePeerConnection()
           const iceCandidate = new RTCIceCandidate(candidate)
           if (peerConnection.remoteDescription) await peerConnection.addIceCandidate(iceCandidate)
           else pendingCandidatesRef.current.push(iceCandidate)
-        } catch {
-          // ignore stale ICE candidates during reconnect
+        } catch (signalingError) {
+          handleSignalingFailure(signalingError)
         }
       })
 
@@ -230,12 +286,23 @@ export function TeleConsultationPanel({ user, queueEntryId, roleLabel = 'Patient
     }
     localTracksAddedRef.current = false
     offerInProgressRef.current = false
+    pendingCandidatesRef.current = []
     if (localVideoRef.current) localVideoRef.current.srcObject = null
     if (remoteVideoRef.current) remoteVideoRef.current.srcObject = null
     setStatus('idle')
     setError('')
     setIsMuted(false)
     setCameraOff(false)
+    setRemotePlaybackNeedsGesture(false)
+  }
+
+  async function enableRemotePlayback() {
+    try {
+      await remoteVideoRef.current?.play()
+      setRemotePlaybackNeedsGesture(false)
+    } catch (playbackError) {
+      setError(normalizeErrorMessage(playbackError))
+    }
   }
 
   function toggleMicrophone() {
@@ -263,6 +330,7 @@ export function TeleConsultationPanel({ user, queueEntryId, roleLabel = 'Patient
         <video ref={localVideoRef} autoPlay muted playsInline className="video local-video" />
         <video ref={remoteVideoRef} autoPlay playsInline className="video remote-video" />
       </div>
+      {remotePlaybackNeedsGesture && <button type="button" className="queue-action" onClick={enableRemotePlayback}>Enable remote audio/video</button>}
       <div className="consultation-actions">
         {status === 'idle' && <button type="button" className="queue-action" onClick={startConsultation}>Join consultation</button>}
         {status !== 'idle' && status !== 'ended' && <><button type="button" className="queue-action" onClick={toggleMicrophone}>{isMuted ? 'Unmute' : 'Mute'}</button><button type="button" className="queue-action" onClick={toggleCamera}>{cameraOff ? 'Start camera' : 'Stop camera'}</button></>}
